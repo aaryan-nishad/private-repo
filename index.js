@@ -4,37 +4,26 @@ import simpleGit from "simple-git";
 import random from "random";
 
 const path = "./data.json";
+const git = simpleGit();
 
-const markCommit = (x, y) => {
-    const date = moment()
-        .subtract(1, "y")
-        .add(1, "d")
-        .add(x, "w")
-        .add(y, "d")
-        .format();
+const makeCommits = async (count) => {
+    try {
+        for (let index = 0; index < count; index += 1) {
+            const daysAgo = index === 0 ? 0 : random.int(0, 364);
+            const date = moment().subtract(daysAgo, "days").format();
 
-    const data = {
-        date: date,
-    };
+            console.log(`Creating commit dated ${date}`);
+            await jsonfile.writeFile(path, { date });
+            await git.add([path]);
+            await git.commit(date, { "--date": date });
+        }
 
-    jsonfile.writeFile(path, data, () => {
-        simpleGit().add([path]).commit(date, { "--date": date }).push();
-    });
-};
-
-const makeCommits = (n) => {
-    if (n === 0) return simpleGit().push();
-    const x = random.int(0, 54);
-    const y = random.int(0, 6);
-    const date = moment().subtract(1, "y").add(1, "d").add(x, "w").add(y, "d").format();
-
-    const data = {
-        date: date,
-    };
-    console.log(date);
-    jsonfile.writeFile(path, data, () => {
-        simpleGit().add([path]).commit(date, { "--date": date }, makeCommits.bind(this, --n));
-    });
+        await git.push();
+        console.log(`Created and pushed ${count} commits.`);
+    } catch (error) {
+        console.error("Failed to create or push commits:", error);
+        process.exitCode = 1;
+    }
 };
 
 makeCommits(100);
